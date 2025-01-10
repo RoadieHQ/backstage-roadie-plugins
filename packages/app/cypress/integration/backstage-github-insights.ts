@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,16 @@ describe('GithubInsights', () => {
       'https://api.github.com/repos/organisation/github-project-slug/readme',
       { fixture: 'githubInsights/readme.json' },
     ).as('getReadme');
+    cy.intercept(
+      'GET',
+      'https://api.github.com/repos/organisation/github-project-slug/branches?protected=true',
+      { fixture: 'githubInsights/compliance.json' },
+    ).as('getBranches');
+    cy.intercept(
+      'GET',
+      'https://api.github.com/repos/organisation/github-project-slug/contributors?per_page=10',
+      { fixture: 'githubInsights/contributors.json' },
+    ).as('getContributors');
     cy.visit('/catalog/default/component/sample-service');
     cy.wait(['@getLanguages', '@getReleases', '@getReadme']);
   });
@@ -53,17 +63,6 @@ describe('GithubInsights', () => {
     });
 
     it('should show GitHub Insights when navigating to Code insights tab', () => {
-      cy.intercept(
-        'GET',
-        'https://api.github.com/repos/organisation/github-project-slug/branches?protected=true',
-        { fixture: 'githubInsights/compliance.json' },
-      ).as('getBranches');
-      cy.intercept(
-        'GET',
-        'https://api.github.com/repos/organisation/github-project-slug/contributors?per_page=10',
-        { fixture: 'githubInsights/contributors.json' },
-      ).as('getContributors');
-
       cy.visit('/catalog/default/component/sample-service/code-insights');
 
       cy.wait(['@getBranches', '@getContributors']);

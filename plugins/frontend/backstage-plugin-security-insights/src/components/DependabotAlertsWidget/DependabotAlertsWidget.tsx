@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,16 @@
 import React, { FC } from 'react';
 // eslint-disable-next-line
 import Alert from '@material-ui/lab/Alert';
-import { makeStyles, Box, Typography, Theme, Grid } from '@material-ui/core';
+import { Box, Grid, makeStyles, Theme, Typography } from '@material-ui/core';
 import { graphql } from '@octokit/graphql';
-import {
-  useApi,
-  githubAuthApiRef,
-  configApiRef,
-} from '@backstage/core-plugin-api';
+import { configApiRef, useApi } from '@backstage/core-plugin-api';
 import { useAsync } from 'react-use';
 import { useProjectEntity } from '../useProjectEntity';
 import { useUrl } from '../useUrl';
 import { useEntity } from '@backstage/plugin-catalog-react';
 import { InfoCard, Progress } from '@backstage/core-components';
 import { GithubNotAuthorized, useGithubLoggedIn } from '../useGithubLoggedIn';
+import { scmAuthApiRef } from '@backstage/integration-react';
 
 const useStyles = makeStyles((theme: Theme) => ({
   infoCard: {
@@ -211,7 +208,7 @@ export const DependabotAlertInformations: FC<DependabotAlertsProps> = ({
 const DependabotAlertsWidgetContent = () => {
   const { entity } = useEntity();
   const { owner, repo } = useProjectEntity(entity);
-  const auth = useApi(githubAuthApiRef);
+  const scmAuth = useApi(scmAuthApiRef);
   const { hostname, baseUrl } = useUrl(entity);
 
   const query = `
@@ -244,11 +241,17 @@ const DependabotAlertsWidgetContent = () => {
   }`;
 
   const { value, loading, error } = useAsync(async (): Promise<any> => {
-    const token = await auth.getAccessToken(['repo']);
+    const credentials = await scmAuth.getCredentials({
+      additionalScope: {
+        customScopes: { github: ['repo'] },
+      },
+      url: `https://${hostname}`,
+      optional: true,
+    });
     const gqlEndpoint = graphql.defaults({
       baseUrl,
       headers: {
-        authorization: `token ${token}`,
+        authorization: `token ${credentials.token}`,
       },
     });
     const { repository } = await gqlEndpoint<any>(query, {

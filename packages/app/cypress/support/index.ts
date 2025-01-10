@@ -25,7 +25,14 @@ Cypress.Commands.add('loginAsGuest', () => {
 Cypress.Commands.add('saveGithubToken', () => {
   cy.intercept(
     'GET',
+    'http://localhost:7007/api/auth/github/refresh?optional&scope=read%3Auser%20repo%20read%3Aorg&env=development',
+
+    { fixture: 'githubLogin/login.json' },
+  );
+  cy.intercept(
+    'GET',
     'http://localhost:7007/api/auth/github/refresh?optional&scope=read%3Auser%20repo&env=development',
+
     { fixture: 'githubLogin/login.json' },
   );
 });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,18 @@
 
 import React from 'react';
 import { Entity } from '@backstage/catalog-model';
-import { render, fireEvent } from '@testing-library/react';
-import { entityStub, dependabotAlertsResponseMock } from '../../mocks/mocks';
+import { fireEvent, render } from '@testing-library/react';
+import { dependabotAlertsResponseMock, entityStub } from '../../mocks/mocks';
 import { graphql } from 'msw';
 import {
   setupRequestMockHandlers,
-  wrapInTestApp,
   TestApiProvider,
+  wrapInTestApp,
 } from '@backstage/test-utils';
 import { setupServer } from 'msw/node';
 import { DependabotAlertsTable } from './DependabotAlertsTable';
-import {
-  configApiRef,
-  githubAuthApiRef,
-  AnyApiRef,
-} from '@backstage/core-plugin-api';
+import { AnyApiRef, configApiRef } from '@backstage/core-plugin-api';
+import { ScmAuthApi, scmAuthApiRef } from '@backstage/integration-react';
 
 let entity: { entity: Entity };
 
@@ -55,9 +52,9 @@ jest.mock('@octokit/graphql', () => ({
 
 const GRAPHQL_GITHUB_API = graphql.link('https://api.github.com/graphql');
 
-const mockGithubAuth = {
-  getAccessToken: async (_: string[]) => 'test-token',
-};
+const mockScmAuth = {
+  getCredentials: async () => ({ token: 'test-token', headers: {} }),
+} as ScmAuthApi;
 
 const config = {
   getOptionalConfigArray: (_: string) => [
@@ -67,7 +64,7 @@ const config = {
 
 const apis: [AnyApiRef, Partial<unknown>][] = [
   [configApiRef, config],
-  [githubAuthApiRef, mockGithubAuth],
+  [scmAuthApiRef, mockScmAuth],
 ];
 
 describe('Dependabot alerts overview', () => {

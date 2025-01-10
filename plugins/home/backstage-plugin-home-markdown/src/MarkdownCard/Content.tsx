@@ -92,7 +92,6 @@ const GithubNotAuthorized = () => {
           <Button
             variant="outlined"
             color="primary"
-            // Calling getAccessToken instead of a plain signIn because we are going to get the correct scopes right away. No need to second request
             onClick={() => githubApi.getAccessToken('repo')}
           >
             Sign in

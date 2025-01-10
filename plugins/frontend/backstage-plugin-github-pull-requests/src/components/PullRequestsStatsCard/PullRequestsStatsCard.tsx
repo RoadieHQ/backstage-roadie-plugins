@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@ import React, { useState } from 'react';
 import {
   InfoCard,
   InfoCardVariants,
-  StructuredMetadataTable,
   MissingAnnotationEmptyState,
+  StructuredMetadataTable,
 } from '@backstage/core-components';
 import {
-  isGithubSlugSet,
   GITHUB_PULL_REQUESTS_ANNOTATION,
+  isGithubSlugSet,
 } from '../../utils/isGithubSlugSet';
 import { usePullRequestsStatistics } from '../usePullRequestsStatistics';
 import {
@@ -31,13 +31,13 @@ import {
   CircularProgress,
   FormControl,
   FormHelperText,
+  makeStyles,
   MenuItem,
   Select,
-  makeStyles,
+  Tooltip,
 } from '@material-ui/core';
 import { Entity } from '@backstage/catalog-model';
 import { useEntity } from '@backstage/plugin-catalog-react';
-import { Tooltip } from '@material-ui/core';
 import { TooltipContent } from './components/TooltipContent';
 import { GithubNotAuthorized, useGithubLoggedIn } from '../useGithubLoggedIn';
 

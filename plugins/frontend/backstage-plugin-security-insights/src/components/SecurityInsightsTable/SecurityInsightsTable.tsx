@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 import React, { useState } from 'react';
 import { Typography, Box, Grid } from '@material-ui/core';
 import GitHubIcon from '@material-ui/icons/GitHub';
-import { useApi, githubAuthApiRef } from '@backstage/core-plugin-api';
+import { useApi } from '@backstage/core-plugin-api';
 import { Progress, Table, TableColumn } from '@backstage/core-components';
 import Alert from '@material-ui/lab/Alert';
 import { Octokit } from '@octokit/rest';
@@ -31,6 +31,7 @@ import { useUrl } from '../useUrl';
 import { getSeverityBadge } from '../utils';
 import { SecurityInsight, SecurityInsightFilterState } from '../../types';
 import { useEntity } from '@backstage/plugin-catalog-react';
+import { scmAuthApiRef } from '@backstage/integration-react';
 
 const getElapsedTime = (start: string) => {
   return DateTime.fromISO(start).toRelative();
@@ -46,14 +47,20 @@ export const SecurityInsightsTable = () => {
   const { entity } = useEntity();
   const { owner, repo } = useProjectEntity(entity);
   const projectName = useProjectName(entity);
-  const auth = useApi(githubAuthApiRef);
-  const { baseUrl } = useUrl(entity);
+  const scmAuth = useApi(scmAuthApiRef);
+  const { baseUrl, hostname } = useUrl(entity);
 
   const { value, loading, error } = useAsync(async (): Promise<
     SecurityInsight[]
   > => {
-    const token = await auth.getAccessToken(['repo']);
-    const octokit = new Octokit({ auth: token });
+    const credentials = await scmAuth.getCredentials({
+      additionalScope: {
+        customScopes: { github: ['repo'] },
+      },
+      url: `https://${hostname}`,
+      optional: true,
+    });
+    const octokit = new Octokit({ auth: credentials.token });
     const response = await octokit.request(
       'GET /repos/{owner}/{repo}/code-scanning/alerts',
       {

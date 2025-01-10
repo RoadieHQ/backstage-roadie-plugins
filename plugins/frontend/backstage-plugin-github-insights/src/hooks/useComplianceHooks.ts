@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 import { Entity } from '@backstage/catalog-model';
-import { useApi, githubAuthApiRef } from '@backstage/core-plugin-api';
+import { useApi } from '@backstage/core-plugin-api';
 import { Octokit } from '@octokit/rest';
 import { OctokitResponse } from '@octokit/types';
 import { useAsync } from 'react-use';
 import { useProjectEntity } from './useProjectEntity';
 import { useEntityGithubScmIntegration } from './useEntityGithubScmIntegration';
 import { useStore } from '../components/store';
+import { scmAuthApiRef } from '@backstage/integration-react';
 
 export const NO_LICENSE_MSG = 'No license file found';
 
 export const useProtectedBranches = (
   entity: Entity,
 ): { branches?: []; error?: Error; loading: boolean } => {
-  const auth = useApi(githubAuthApiRef);
-  const { baseUrl } = useEntityGithubScmIntegration(entity);
+  const auth = useApi(scmAuthApiRef);
+  const { baseUrl, hostname } = useEntityGithubScmIntegration(entity);
   const { owner, repo } = useProjectEntity(entity);
 
   const { state: branches, setState: setBranches } = useStore(
@@ -38,7 +39,15 @@ export const useProtectedBranches = (
   const { value, loading, error } = useAsync(async (): Promise<any> => {
     let result;
     try {
-      const token = await auth.getAccessToken(['repo']);
+      const { token } = await auth.getCredentials({
+        url: `https://${hostname}/`,
+        additionalScope: {
+          customScopes: {
+            github: ['repo'],
+          },
+        },
+      });
+
       const octokit = new Octokit({ auth: token });
 
       const response = await octokit.request(
@@ -77,8 +86,8 @@ export const useProtectedBranches = (
 export const useRepoLicence = (
   entity: Entity,
 ): { license?: string; error?: Error; loading: boolean } => {
-  const auth = useApi(githubAuthApiRef);
-  const { baseUrl } = useEntityGithubScmIntegration(entity);
+  const auth = useApi(scmAuthApiRef);
+  const { baseUrl, hostname } = useEntityGithubScmIntegration(entity);
   const { owner, repo } = useProjectEntity(entity);
 
   const { state: license, setState: setLicense } = useStore(
@@ -90,7 +99,15 @@ export const useRepoLicence = (
       return license;
     }
 
-    const token = await auth.getAccessToken(['repo']);
+    const { token } = await auth.getCredentials({
+      url: `https://${hostname}/`,
+      additionalScope: {
+        customScopes: {
+          github: ['repo'],
+        },
+      },
+    });
+
     const octokit = new Octokit({ auth: token });
 
     let result;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,33 @@
  * limitations under the License.
  */
 
-import React, { FC, useState, useRef } from 'react';
+import React, { FC, useRef, useState } from 'react';
 import { debounce } from 'lodash';
 import {
-  InputAdornment,
-  IconButton,
-  TextField,
-  Typography,
   Box,
-  ButtonGroup,
   Button,
+  ButtonGroup,
+  IconButton,
+  InputAdornment,
+  TextField,
   Tooltip,
+  Typography,
 } from '@material-ui/core';
 import GitHubIcon from '@material-ui/icons/GitHub';
 import ClearIcon from '@material-ui/icons/Clear';
 import SearchIcon from '@material-ui/icons/Search';
 import {
-  Table,
-  TableColumn,
   MarkdownContent,
   MissingAnnotationEmptyState,
+  Table,
+  TableColumn,
 } from '@backstage/core-components';
 import {
-  isGithubSlugSet,
   GITHUB_PULL_REQUESTS_ANNOTATION,
+  isGithubSlugSet,
 } from '../../utils/isGithubSlugSet';
 import { isRoadieBackstageDefaultFilterSet } from '../../utils/isRoadieBackstageDefaultFilterSet';
-import { usePullRequests, PullRequest } from '../usePullRequests';
+import { PullRequest, usePullRequests } from '../usePullRequests';
 import { PullRequestState } from '../../types';
 import { Entity } from '@backstage/catalog-model';
 import { getStatusIconType } from '../Icons';

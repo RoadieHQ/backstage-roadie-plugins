@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,19 @@
 
 import { useAsync } from 'react-use';
 import { Octokit } from '@octokit/rest';
-import { useApi, githubAuthApiRef } from '@backstage/core-plugin-api';
+import { useApi } from '@backstage/core-plugin-api';
 import { useEntityGithubScmIntegration } from './useEntityGithubScmIntegration';
 import { ContributorData, GithubRequestState } from '../components/types';
 import { useEntity } from '@backstage/plugin-catalog-react';
 import { useStore } from '../components/store';
+import { scmAuthApiRef } from '@backstage/integration-react';
 
 export const useContributor = (
   username: string,
 ): { contributor?: ContributorData; error?: Error; loading: boolean } => {
-  const auth = useApi(githubAuthApiRef);
+  const auth = useApi(scmAuthApiRef);
   const { entity } = useEntity();
-  const { baseUrl } = useEntityGithubScmIntegration(entity);
+  const { hostname, baseUrl } = useEntityGithubScmIntegration(entity);
 
   const { state: contributorData, setState: setContributorData } = useStore(
     state => state.contributor,
@@ -38,7 +39,15 @@ export const useContributor = (
   > => {
     let result;
     try {
-      const token = await auth.getAccessToken(['repo']);
+      const { token } = await auth.getCredentials({
+        url: `https://${hostname}/`,
+        additionalScope: {
+          customScopes: {
+            github: ['repo'],
+          },
+        },
+      });
+
       const octokit = new Octokit({ auth: token });
 
       const response = await octokit.request(`GET /users/${username}`, {

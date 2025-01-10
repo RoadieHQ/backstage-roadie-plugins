@@ -16,9 +16,10 @@
 
 import { createApiRef } from '@backstage/core-plugin-api';
 import {
-  SearchPullRequestsResponseData,
-  GithubRepositoryData,
   GithubFirstCommitDate,
+  GithubRepositoryData,
+  GithubSearchPullRequestsDataItem,
+  SearchPullRequestsResponseData,
 } from '../types';
 
 export const githubPullRequestsApiRef = createApiRef<GithubPullRequestsApi>({
@@ -28,47 +29,49 @@ export const githubPullRequestsApiRef = createApiRef<GithubPullRequestsApi>({
 export type GithubPullRequestsApi = {
   listPullRequests: ({
     search,
-    token,
     owner,
     repo,
     pageSize,
     page,
     branch,
-    baseUrl,
+    hostname,
   }: {
     search: string;
-    token: string;
     owner: string;
     repo: string;
     pageSize?: number;
     page?: number;
     branch?: string;
-    baseUrl: string | undefined;
+    hostname?: string;
   }) => Promise<{
     pullRequestsData: SearchPullRequestsResponseData;
   }>;
 
   getRepositoryData: ({
-    baseUrl,
-    token,
+    hostname,
     url,
   }: {
-    baseUrl: string | undefined;
-    token: string;
+    hostname?: string;
     url: string;
   }) => Promise<GithubRepositoryData>;
 
   getCommitDetailsData({
-    baseUrl,
-    token,
+    hostname,
     owner,
     repo,
     number,
   }: {
-    baseUrl: string | undefined;
-    token: string;
+    hostname?: string;
     owner: string;
     repo: string;
     number: number;
   }): Promise<GithubFirstCommitDate>;
+
+  searchPullRequest({
+    query,
+    hostname,
+  }: {
+    query: string;
+    hostname?: string;
+  }): Promise<GithubSearchPullRequestsDataItem[]>;
 };

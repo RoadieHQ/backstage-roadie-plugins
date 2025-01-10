@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,7 @@
 
 import React from 'react';
 import { render } from '@testing-library/react';
-import {
-  configApiRef,
-  githubAuthApiRef,
-  AnyApiRef,
-} from '@backstage/core-plugin-api';
+import { configApiRef, AnyApiRef } from '@backstage/core-plugin-api';
 import { rest } from 'msw';
 import {
   setupRequestMockHandlers,
@@ -32,16 +28,11 @@ import { setupServer } from 'msw/node';
 import { alertsResponseMock, entityMock } from '../../mocks/mocks';
 import { SecurityInsightsWidget } from './SecurityInsightsWidget';
 import { EntityProvider } from '@backstage/plugin-catalog-react';
+import { ScmAuthApi, scmAuthApiRef } from '@backstage/integration-react';
 
-const mockGithubAuth = {
-  getAccessToken: async (_: string[]) => 'test-token',
-  sessionState$: jest.fn(() => ({
-    subscribe: (fn: (a: string) => void) => {
-      fn('SignedIn');
-      return { unsubscribe: jest.fn() };
-    },
-  })),
-};
+const mockScmAuth = {
+  getCredentials: async () => ({ token: 'test-token', headers: {} }),
+} as ScmAuthApi;
 
 const config = {
   getOptionalConfigArray: (_: string) => [
@@ -51,7 +42,7 @@ const config = {
 
 const apis: [AnyApiRef, Partial<unknown>][] = [
   [configApiRef, config],
-  [githubAuthApiRef, mockGithubAuth],
+  [scmAuthApiRef, mockScmAuth],
 ];
 
 describe('Security Insights Card', () => {

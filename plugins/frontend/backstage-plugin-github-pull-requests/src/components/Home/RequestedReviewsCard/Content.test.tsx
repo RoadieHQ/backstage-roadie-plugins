@@ -15,25 +15,51 @@
  */
 
 import React from 'react';
-import { AnyApiRef, githubAuthApiRef } from '@backstage/core-plugin-api';
+import { AnyApiRef, ConfigApi, configApiRef } from '@backstage/core-plugin-api';
 import {
-  wrapInTestApp,
   setupRequestMockHandlers,
   TestApiProvider,
+  wrapInTestApp,
 } from '@backstage/test-utils';
-import { render, screen, cleanup } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { setupServer } from 'msw/node';
 import { Content } from './Content';
 import { handlers } from '../../../mocks/handlers';
-
+import { ScmAuthApi, scmAuthApiRef } from '@backstage/integration-react';
 import {
-  SignedInMockGithubAuthState,
-  SignedOutMockGithubAuthState,
-} from '../../../mocks/githubAuthApi';
+  githubPullRequestsApiRef,
+  GithubPullRequestsClient,
+} from '../../../api';
+import { ConfigReader } from '@backstage/core-app-api';
+import { defaultIntegrationsConfig } from '../../../mocks/scmIntegrationsApiMock';
+
+const mockScmAuth = {
+  getCredentials: async () => ({ token: 'test-token', headers: {} }),
+} as ScmAuthApi;
+
+const config = {
+  getOptionalConfigArray(_: string) {
+    return [{ getOptionalString: (_s: string) => undefined }];
+  },
+} as ConfigApi;
 
 const apis: [AnyApiRef, Partial<unknown>][] = [
-  [githubAuthApiRef, SignedInMockGithubAuthState],
+  [configApiRef, config],
+  [scmAuthApiRef, mockScmAuth],
+  [
+    githubPullRequestsApiRef,
+    new GithubPullRequestsClient({
+      configApi: ConfigReader.fromConfigs([
+        {
+          context: 'unit-test',
+          data: defaultIntegrationsConfig,
+        },
+      ]),
+      scmAuthApi: mockScmAuth,
+    }),
+  ],
 ];
+
 describe('<RequestedReviewsCard>', () => {
   const worker = setupServer();
   setupRequestMockHandlers(worker);
@@ -45,7 +71,12 @@ describe('<RequestedReviewsCard>', () => {
   });
   it('should render sign in page', async () => {
     const api: [AnyApiRef, Partial<unknown>][] = [
-      [githubAuthApiRef, SignedOutMockGithubAuthState],
+      [
+        scmAuthApiRef,
+        {
+          getCredentials: async () => ({ token: undefined, headers: {} }),
+        },
+      ],
     ];
     render(
       wrapInTestApp(

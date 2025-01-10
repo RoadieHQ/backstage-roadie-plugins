@@ -60,7 +60,7 @@ type ReadMeCardProps = {
 const ReadMeCard = (props: ReadMeCardProps) => {
   const { entity } = useEntity();
   const { owner, repo, readmePath } = useProjectEntity(entity);
-  const { hostname, baseUrl } = useEntityGithubScmIntegration(entity);
+  const { hostname } = useEntityGithubScmIntegration(entity);
   const classes = useStyles();
 
   const linkPath = readmePath || 'README.md';
@@ -87,7 +87,7 @@ const ReadMeCard = (props: ReadMeCardProps) => {
         }}
       >
         <MarkdownContent
-          baseUrl={baseUrl}
+          hostname={hostname}
           owner={owner}
           repo={repo}
           path={readmePath}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,34 +19,24 @@ import { render } from '@testing-library/react';
 import { InsightsPage } from './InsightsPage';
 import { ThemeProvider } from '@material-ui/core';
 import { lightTheme } from '@backstage/theme';
-import { wrapInTestApp, TestApiProvider } from '@backstage/test-utils';
+import { TestApiProvider, wrapInTestApp } from '@backstage/test-utils';
 import { EntityProvider } from '@backstage/plugin-catalog-react';
 
-import { AnyApiRef, githubAuthApiRef } from '@backstage/core-plugin-api';
+import { AnyApiRef } from '@backstage/core-plugin-api';
 
+import { ConfigReader } from '@backstage/core-app-api';
 import {
-  GithubAuth,
-  OAuthRequestManager,
-  UrlPatternDiscovery,
-  ConfigReader,
-} from '@backstage/core-app-api';
-import {
-  scmIntegrationsApiRef,
+  scmAuthApiRef,
   ScmIntegrationsApi,
+  scmIntegrationsApiRef,
 } from '@backstage/integration-react';
 import { defaultIntegrationsConfig } from '../../mocks/scmIntegrationsApiMock';
 
-const oauthRequestApi = new OAuthRequestManager();
+const mockScmAuth = {
+  getCredentials: async () => ({ token: 'test-token' }),
+};
 const apis: [AnyApiRef, Partial<unknown>][] = [
-  [
-    githubAuthApiRef,
-    GithubAuth.create({
-      discoveryApi: UrlPatternDiscovery.compile(
-        'http://example.com/{{pluginId}}',
-      ),
-      oauthRequestApi,
-    }),
-  ],
+  [scmAuthApiRef, mockScmAuth],
   [
     scmIntegrationsApiRef,
     ScmIntegrationsApi.fromConfig(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 
 import { useEffect, useState } from 'react';
 import { useAsyncRetry } from 'react-use';
-import { githubPullRequestsApiRef } from '../api/GithubPullRequestsApi';
-import { useApi, githubAuthApiRef } from '@backstage/core-plugin-api';
+import { githubPullRequestsApiRef } from '../api';
+import { useApi } from '@backstage/core-plugin-api';
 import { SearchPullRequestsResponseData } from '../types';
-import { useBaseUrl } from './useBaseUrl';
 import { DateTime } from 'luxon';
+import { useEntity } from '@backstage/plugin-catalog-react';
+import { getHostname } from '../utils/githubUtils';
 
 export type PullRequest = {
   id: number;
@@ -49,8 +50,8 @@ export function usePullRequests({
   branch?: string;
 }) {
   const api = useApi(githubPullRequestsApiRef);
-  const auth = useApi(githubAuthApiRef);
-  const baseUrl = useBaseUrl();
+  const { entity } = useEntity();
+  const hostname = getHostname(entity);
   const [total, setTotal] = useState(0);
   const [totalResults, setTotalResults] = useState(0);
   const [page, setPage] = useState(0);
@@ -70,7 +71,6 @@ export function usePullRequests({
     retry,
     error,
   } = useAsyncRetry<PullRequest[]>(async () => {
-    const token = await auth.getAccessToken(['repo']);
     if (!repo) {
       return [];
     }
@@ -78,14 +78,13 @@ export function usePullRequests({
       api
         // GitHub API pagination count starts from 1
         .listPullRequests({
-          token,
           search,
           owner,
           repo,
           pageSize,
           page: page + 1,
           branch,
-          baseUrl,
+          hostname,
         })
         .then(
           ({

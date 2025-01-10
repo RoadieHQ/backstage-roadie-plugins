@@ -15,10 +15,12 @@
  */
 
 import { GithubApi } from './GithubApi';
-import { OAuthApi } from '@backstage/core-plugin-api';
+import { ConfigApi } from '@backstage/core-plugin-api';
 import { Octokit } from '@octokit/rest';
 import parseGitUrl from 'git-url-parse';
 import { MarkdownContentProps } from '../components/Widgets/MarkdownContent/types';
+import { readGithubIntegrationConfigs } from '@backstage/integration';
+import { ScmAuthApi } from '@backstage/integration-react';
 
 const mimeTypeMap: Record<string, string> = {
   svg: 'image/svg+xml',
@@ -38,8 +40,6 @@ const mimeTypeLookup = (href: string): string | undefined => {
 const getRepositoryDefaultBranch = (url: string) => {
   return new URL(url).searchParams.get('ref');
 };
-
-const defaultBaseUrl = 'https://api.github.com';
 
 /**
  * Combines a given path to a README file with a relative path, resulting in a new path
@@ -79,10 +79,29 @@ const combinePaths = (readmePath: string, relativePath: string): string => {
 };
 
 export class GithubClient implements GithubApi {
-  private githubAuthApi: OAuthApi;
+  private readonly configApi: ConfigApi;
+  private readonly scmAuthApi: ScmAuthApi;
 
-  constructor(deps: { githubAuthApi: OAuthApi }) {
-    this.githubAuthApi = deps.githubAuthApi;
+  constructor(options: { configApi: ConfigApi; scmAuthApi: ScmAuthApi }) {
+    this.configApi = options.configApi;
+    this.scmAuthApi = options.scmAuthApi;
+  }
+
+  private async getOctokit(hostname: string = 'github.com'): Promise<Octokit> {
+    const { token } = await this.scmAuthApi.getCredentials({
+      url: `https://${hostname}/`,
+      additionalScope: {
+        customScopes: {
+          github: ['repo'],
+        },
+      },
+    });
+    const configs = readGithubIntegrationConfigs(
+      this.configApi.getOptionalConfigArray('integrations.github') ?? [],
+    );
+    const githubIntegrationConfig = configs.find(v => v.host === hostname);
+    const baseUrl = githubIntegrationConfig?.apiBaseUrl;
+    return new Octokit({ auth: token, baseUrl });
   }
 
   async getContent(props: MarkdownContentProps): Promise<{
@@ -90,15 +109,9 @@ export class GithubClient implements GithubApi {
     media: Record<string, string>;
     links: Record<string, string>;
   }> {
-    const {
-      path: customReadmePath,
-      repo,
-      owner,
-      branch,
-      baseUrl = defaultBaseUrl,
-    } = props;
-    const token = await this.githubAuthApi.getAccessToken();
-    const octokit = new Octokit({ auth: token, baseUrl });
+    const { path: customReadmePath, repo, owner, branch, hostname } = props;
+
+    const octokit = await this.getOctokit(hostname);
 
     let query = 'readme';
     if (customReadmePath) {

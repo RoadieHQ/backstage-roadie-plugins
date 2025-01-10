@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { AnyApiRef, githubAuthApiRef } from '@backstage/core-plugin-api';
+import { AnyApiRef } from '@backstage/core-plugin-api';
 import { ConfigReader } from '@backstage/core-app-api';
 import { rest } from 'msw';
 import {
@@ -31,23 +31,18 @@ import { lightTheme } from '@backstage/theme';
 import ReleasesCard from '.';
 import { EntityProvider } from '@backstage/plugin-catalog-react';
 import {
-  scmIntegrationsApiRef,
+  scmAuthApiRef,
   ScmIntegrationsApi,
+  scmIntegrationsApiRef,
 } from '@backstage/integration-react';
 import { defaultIntegrationsConfig } from '../../../mocks/scmIntegrationsApiMock';
 
-const mockGithubAuth = {
-  getAccessToken: async (_: string[]) => 'test-token',
-  sessionState$: jest.fn(() => ({
-    subscribe: (fn: (a: string) => void) => {
-      fn('SignedIn');
-      return { unsubscribe: jest.fn() };
-    },
-  })),
+const mockScmAuth = {
+  getCredentials: async () => ({ token: 'test-token' }),
 };
 
 const apis: [AnyApiRef, Partial<unknown>][] = [
-  [githubAuthApiRef, mockGithubAuth],
+  [scmAuthApiRef, mockScmAuth],
   [
     scmIntegrationsApiRef,
     ScmIntegrationsApi.fromConfig(

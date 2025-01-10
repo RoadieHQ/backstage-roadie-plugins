@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,8 @@ import {
 } from '@backstage/test-utils';
 import { setupServer } from 'msw/node';
 import { DependabotAlertsWidget } from './DependabotAlertsWidget';
-import {
-  configApiRef,
-  githubAuthApiRef,
-  AnyApiRef,
-} from '@backstage/core-plugin-api';
+import { configApiRef, AnyApiRef } from '@backstage/core-plugin-api';
+import { ScmAuthApi, scmAuthApiRef } from '@backstage/integration-react';
 
 let entity: { entity: Entity };
 
@@ -55,16 +52,9 @@ jest.mock('@octokit/graphql', () => ({
 
 const GRAPHQL_GITHUB_API = graphql.link('https://api.github.com/graphql');
 
-const mockGithubAuth = {
-  getAccessToken: async (_: string[]) => 'test-token',
-  sessionState$: jest.fn(() => ({
-    subscribe: (fn: (a: string) => void) => {
-      fn('SignedIn');
-      return { unsubscribe: jest.fn() };
-    },
-  })),
-};
-
+const mockScmAuth = {
+  getCredentials: async () => ({ token: 'test-token', headers: {} }),
+} as ScmAuthApi;
 const config = {
   getOptionalConfigArray: (_: string) => [
     { getOptionalString: (_other: string) => undefined },
@@ -81,12 +71,12 @@ const configForLowSeverity = {
 
 const apis: [AnyApiRef, Partial<unknown>][] = [
   [configApiRef, config],
-  [githubAuthApiRef, mockGithubAuth],
+  [scmAuthApiRef, mockScmAuth],
 ];
 
 const apisLowSeverity: [AnyApiRef, Partial<unknown>][] = [
   [configApiRef, configForLowSeverity],
-  [githubAuthApiRef, mockGithubAuth],
+  [scmAuthApiRef, mockScmAuth],
 ];
 
 describe('Dependabot alerts overview', () => {

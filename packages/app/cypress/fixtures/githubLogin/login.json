@@ -11,7 +11,7 @@
   },
   "providerInfo": {
     "accessToken": "foo",
-    "scope": "read:user repo",
+    "scope": "read:user repo read:org",
     "expiresInSeconds": 3600
   },
   "profile": {

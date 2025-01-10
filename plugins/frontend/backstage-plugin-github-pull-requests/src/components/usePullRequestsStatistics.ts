@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,12 @@
  */
 
 import { useAsync } from 'react-use';
-import { githubPullRequestsApiRef } from '../api/GithubPullRequestsApi';
-import { useApi, githubAuthApiRef } from '@backstage/core-plugin-api';
-import { useBaseUrl } from './useBaseUrl';
+import { githubPullRequestsApiRef } from '../api';
+import { useApi } from '@backstage/core-plugin-api';
 import { PullRequestState, SearchPullRequestsResponseData } from '../types';
 import { Duration } from 'luxon';
+import { useEntity } from '@backstage/plugin-catalog-react';
+import { getHostname } from '../utils/githubUtils';
 
 export type PullRequestStats = {
   avgTimeUntilMerge: string;
@@ -109,15 +110,13 @@ export function usePullRequestsStatistics({
   state: PullRequestState;
 }) {
   const api = useApi(githubPullRequestsApiRef);
-  const auth = useApi(githubAuthApiRef);
-  const baseUrl = useBaseUrl();
-
+  const { entity } = useEntity();
+  const hostname = getHostname(entity);
   const {
     loading,
     value: statsData,
     error,
   } = useAsync(async (): Promise<PullRequestStats> => {
-    const token = await auth.getAccessToken(['repo']);
     if (!repo) {
       return {
         avgTimeUntilMerge: 'Never',
@@ -135,13 +134,12 @@ export function usePullRequestsStatistics({
       pullRequestsData: SearchPullRequestsResponseData;
     } = await api.listPullRequests({
       search: `state:${state}`,
-      token,
+      hostname,
       owner,
       repo,
       pageSize,
       page: 1,
       branch,
-      baseUrl,
     });
 
     const botUsernames = [
@@ -158,12 +156,10 @@ export function usePullRequestsStatistics({
         .map(async pr => {
           const repoData = await api.getRepositoryData({
             url: pr.pull_request.url,
-            baseUrl,
-            token,
+            hostname,
           });
           const commitDate = await api.getCommitDetailsData({
-            baseUrl,
-            token,
+            hostname,
             owner,
             repo,
             number: pr.number,

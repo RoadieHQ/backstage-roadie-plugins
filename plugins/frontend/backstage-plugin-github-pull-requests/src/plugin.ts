@@ -20,10 +20,12 @@ import {
   createRouteRef,
   createRoutableExtension,
   createComponentExtension,
+  configApiRef,
 } from '@backstage/core-plugin-api';
 import { createCardExtension } from '@backstage/plugin-home-react';
 
 import { githubPullRequestsApiRef, GithubPullRequestsClient } from './api';
+import { scmAuthApiRef } from '@backstage/integration-react';
 
 export const entityContentRouteRef = createRouteRef({
   id: 'github-pull-requests',
@@ -31,8 +33,14 @@ export const entityContentRouteRef = createRouteRef({
 
 export const githubPullRequestsPlugin = createPlugin({
   id: 'github-pull-requests',
+
   apis: [
-    createApiFactory(githubPullRequestsApiRef, new GithubPullRequestsClient()),
+    createApiFactory({
+      api: githubPullRequestsApiRef,
+      deps: { configApi: configApiRef, scmAuthApi: scmAuthApiRef },
+      factory: ({ configApi, scmAuthApi }) =>
+        new GithubPullRequestsClient({ configApi, scmAuthApi }),
+    }),
   ],
   routes: {
     entityContent: entityContentRouteRef,

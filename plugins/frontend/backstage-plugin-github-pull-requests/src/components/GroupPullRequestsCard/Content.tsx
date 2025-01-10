@@ -26,6 +26,7 @@ import {
 import Alert from '@material-ui/lab/Alert';
 import { Entity, isGroupEntity } from '@backstage/catalog-model';
 import { useEntity } from '@backstage/plugin-catalog-react';
+import { getHostname } from '../../utils/githubUtils';
 
 export const getPullRequestsQueryForGroup = (entity: Entity) => {
   const githubTeamName = isGithubTeamSlugSet(entity);
@@ -35,8 +36,9 @@ export const getPullRequestsQueryForGroup = (entity: Entity) => {
 
 const PullRequestsCard = () => {
   const { entity } = useEntity();
+  const hostname = getHostname(entity);
   const query = getPullRequestsQueryForGroup(entity);
-  const { loading, error, value } = useGithubSearchPullRequest(query);
+  const { loading, error, value } = useGithubSearchPullRequest(query, hostname);
 
   if (loading) return <SkeletonPullRequestsListView />;
   if (error) return <Alert severity="error">{error.message}</Alert>;
@@ -48,9 +50,10 @@ const PullRequestsCard = () => {
 
 export const Content = () => {
   const { entity } = useEntity();
-  const isLoggedIn = useGithubLoggedIn();
+  const hostname = getHostname(entity);
+  const isLoggedIn = useGithubLoggedIn(hostname);
   if (!isLoggedIn) {
-    return <GithubNotAuthorized />;
+    return <GithubNotAuthorized hostname={hostname} />;
   }
   const githubTeamName = isGithubTeamSlugSet(entity);
   if (!githubTeamName || githubTeamName === '') {

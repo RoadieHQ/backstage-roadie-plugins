@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import {
-  configApiRef,
-  githubAuthApiRef,
-  AnyApiRef,
-} from '@backstage/core-plugin-api';
+import { AnyApiRef, ConfigApi, configApiRef } from '@backstage/core-plugin-api';
 import {
   setupRequestMockHandlers,
   TestApiProvider,
@@ -32,27 +28,35 @@ import { entityMock } from '../../mocks/mocks';
 import PullRequestsStatsCard from './PullRequestsStatsCard';
 import { EntityProvider } from '@backstage/plugin-catalog-react';
 import { handlers } from '../../mocks/handlers';
+import { ScmAuthApi, scmAuthApiRef } from '@backstage/integration-react';
+import { ConfigReader } from '@backstage/core-app-api';
+import { defaultIntegrationsConfig } from '../../mocks/scmIntegrationsApiMock';
 
-const mockGithubAuth = {
-  getAccessToken: async (_: string[]) => 'test-token',
-  sessionState$: jest.fn(() => ({
-    subscribe: (fn: (a: string) => void) => {
-      fn('SignedIn');
-      return { unsubscribe: jest.fn() };
-    },
-  })),
-};
+const mockScmAuth = {
+  getCredentials: async () => ({ token: 'test-token', headers: {} }),
+} as ScmAuthApi;
 
 const config = {
-  getOptionalConfigArray: (_: string) => [
-    { getOptionalString: (_s: string) => undefined },
-  ],
-};
+  getOptionalConfigArray(_: string) {
+    return [{ getOptionalString: (_s: string) => undefined }];
+  },
+} as ConfigApi;
 
 const apis: [AnyApiRef, Partial<unknown>][] = [
   [configApiRef, config],
-  [githubAuthApiRef, mockGithubAuth],
-  [githubPullRequestsApiRef, new GithubPullRequestsClient()],
+  [scmAuthApiRef, mockScmAuth],
+  [
+    githubPullRequestsApiRef,
+    new GithubPullRequestsClient({
+      configApi: ConfigReader.fromConfigs([
+        {
+          context: 'unit-test',
+          data: defaultIntegrationsConfig,
+        },
+      ]),
+      scmAuthApi: mockScmAuth,
+    }),
+  ],
 ];
 
 describe('PullRequestsCard', () => {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { useApi, githubAuthApiRef } from '@backstage/core-plugin-api';
+import { useApi } from '@backstage/core-plugin-api';
 import { useAsync } from 'react-use';
 import { GithubRepositoryData } from '../types';
-import { useBaseUrl } from './useBaseUrl';
-import { GithubPullRequestsClient } from '../api';
+import { githubPullRequestsApiRef } from '../api';
 
 export const useGithubRepositoryData = (url: string) => {
-  const githubAuthApi = useApi(githubAuthApiRef);
-  const baseUrl = useBaseUrl();
+  const githubPullRequestsApi = useApi(githubPullRequestsApiRef);
+
+  let domain = '';
+  try {
+    const hostname = new URL(url).hostname;
+    const parts = hostname.split('.');
+    if (parts.length >= 2) {
+      domain = `${parts[parts.length - 2]}.${parts[parts.length - 1]}`;
+    } else {
+      throw new Error('Hostname is not valid for domain extraction');
+    }
+  } catch (err) {
+    throw new Error('Invalid URL for extracting domain');
+  }
 
   return useAsync(async (): Promise<GithubRepositoryData> => {
-    const token = await githubAuthApi.getAccessToken(['repo']);
-
-    return new GithubPullRequestsClient().getRepositoryData({
+    return githubPullRequestsApi.getRepositoryData({
       url,
-      baseUrl,
-      token,
+      hostname: domain,
     });
-  }, [githubAuthApi]);
+  }, [githubPullRequestsApi, domain]);
 };

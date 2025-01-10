@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,20 +22,21 @@ import {
   Progress,
   StructuredMetadataTable,
 } from '@backstage/core-components';
-import { useApi, githubAuthApiRef } from '@backstage/core-plugin-api';
+import { useApi } from '@backstage/core-plugin-api';
 import { useAsync } from 'react-use';
 import { Octokit } from '@octokit/rest';
 import { useProjectEntity } from '../useProjectEntity';
 import { useUrl } from '../useUrl';
 import { getSeverityBadge } from '../utils';
 import {
-  SecurityInsight,
   IssuesCounterProps,
-  SeverityLevels,
+  SecurityInsight,
   SecurityInsightFilterState,
+  SeverityLevels,
 } from '../../types';
 import { useEntity } from '@backstage/plugin-catalog-react';
 import { GithubNotAuthorized, useGithubLoggedIn } from '../useGithubLoggedIn';
+import { scmAuthApiRef } from '@backstage/integration-react';
 
 const useStyles = makeStyles(theme => ({
   infoCard: {
@@ -76,14 +77,20 @@ const SecurityInsightsWidgetContent = () => {
   const { entity } = useEntity();
   const { owner, repo } = useProjectEntity(entity);
   const classes = useStyles();
-  const auth = useApi(githubAuthApiRef);
+  const scmAuth = useApi(scmAuthApiRef);
   const { baseUrl, hostname } = useUrl(entity);
 
   const { value, loading, error } = useAsync(async (): Promise<
     SecurityInsight[]
   > => {
-    const token = await auth.getAccessToken(['repo']);
-    const octokit = new Octokit({ auth: token });
+    const credentials = await scmAuth.getCredentials({
+      additionalScope: {
+        customScopes: { github: ['repo'] },
+      },
+      url: `https://${hostname}`,
+      optional: true,
+    });
+    const octokit = new Octokit({ auth: credentials.token });
 
     const response = await octokit.request(
       'GET /repos/{owner}/{repo}/code-scanning/alerts',

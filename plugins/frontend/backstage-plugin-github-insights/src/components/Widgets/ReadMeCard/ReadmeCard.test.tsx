@@ -16,17 +16,18 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { AnyApiRef, githubAuthApiRef } from '@backstage/core-plugin-api';
+import { AnyApiRef } from '@backstage/core-plugin-api';
 import { ConfigReader } from '@backstage/core-app-api';
-import { wrapInTestApp, TestApiProvider } from '@backstage/test-utils';
+import { TestApiProvider, wrapInTestApp } from '@backstage/test-utils';
 import { entityMock } from '../../../mocks/mocks';
 import { ThemeProvider } from '@material-ui/core';
 import { lightTheme } from '@backstage/theme';
 import { ReadMeCard } from '..';
 import { EntityProvider } from '@backstage/plugin-catalog-react';
 import {
-  scmIntegrationsApiRef,
+  scmAuthApiRef,
   ScmIntegrationsApi,
+  scmIntegrationsApiRef,
 } from '@backstage/integration-react';
 import { defaultIntegrationsConfig } from '../../../mocks/scmIntegrationsApiMock';
 import {
@@ -57,19 +58,13 @@ const mockGithubApi: GithubApi = {
     throw new Error(`${JSON.stringify(props)} NotFound`);
   },
 };
-const mockGithubAuth = {
-  getAccessToken: async (_: string[]) => 'test-token',
-  sessionState$: jest.fn(() => ({
-    subscribe: (fn: (a: string) => void) => {
-      fn('SignedIn');
-      return { unsubscribe: jest.fn() };
-    },
-  })),
+const mockScmAuth = {
+  getCredentials: async () => ({ token: 'test-token' }),
 };
 
 const apis: [AnyApiRef, Partial<unknown>][] = [
   [githubApiRef, mockGithubApi],
-  [githubAuthApiRef, mockGithubAuth],
+  [scmAuthApiRef, mockScmAuth],
   [
     scmIntegrationsApiRef,
     ScmIntegrationsApi.fromConfig(

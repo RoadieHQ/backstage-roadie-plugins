@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 import React, { useEffect, useState } from 'react';
-import {
-  useApi,
-  githubAuthApiRef,
-  SessionState,
-} from '@backstage/core-plugin-api';
-import { Grid, Tooltip, Button, Typography } from '@material-ui/core';
+import { useApi } from '@backstage/core-plugin-api';
+import { Button, Grid, Tooltip, Typography } from '@material-ui/core';
+import { scmAuthApiRef } from '@backstage/integration-react';
 
-export const GithubNotAuthorized = () => {
-  const githubApi = useApi(githubAuthApiRef);
+export const GithubNotAuthorized = ({
+  hostname = 'github.com',
+}: {
+  hostname?: string;
+}) => {
+  const scmAuth = useApi(scmAuthApiRef);
   return (
     <Grid container>
       <Grid item xs={8}>
@@ -36,8 +37,15 @@ export const GithubNotAuthorized = () => {
           <Button
             variant="outlined"
             color="primary"
-            // Calling getAccessToken instead of a plain signIn because we are going to get the correct scopes right away. No need to second request
-            onClick={() => githubApi.getAccessToken('repo')}
+            onClick={() =>
+              scmAuth.getCredentials({
+                additionalScope: {
+                  customScopes: { github: ['repo'] },
+                },
+                url: `https://${hostname}`,
+                optional: true,
+              })
+            }
           >
             Sign in
           </Button>
@@ -47,21 +55,27 @@ export const GithubNotAuthorized = () => {
   );
 };
 
-export const useGithubLoggedIn = () => {
-  const githubApi = useApi(githubAuthApiRef);
+export const useGithubLoggedIn = (hostname: string = 'github.com') => {
+  const scmAuth = useApi(scmAuthApiRef);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    githubApi.getAccessToken('repo', { optional: true });
-    const authSubscription = githubApi.sessionState$().subscribe(state => {
-      if (state === SessionState.SignedIn) {
+    const doLogin = async () => {
+      const credentials = await scmAuth.getCredentials({
+        additionalScope: {
+          customScopes: { github: ['repo'] },
+        },
+        url: `https://${hostname}`,
+        optional: true,
+      });
+
+      if (credentials?.token) {
         setIsLoggedIn(true);
       }
-    });
-    return () => {
-      authSubscription.unsubscribe();
     };
-  }, [githubApi]);
+
+    doLogin();
+  }, [hostname, scmAuth]);
 
   return isLoggedIn;
 };

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,33 +15,46 @@
  */
 
 import React from 'react';
-import { render, screen, cleanup } from '@testing-library/react';
-import {
-  configApiRef,
-  githubAuthApiRef,
-  AnyApiRef,
-} from '@backstage/core-plugin-api';
+import { cleanup, render, screen } from '@testing-library/react';
+import { AnyApiRef, ConfigApi, configApiRef } from '@backstage/core-plugin-api';
 import {
   setupRequestMockHandlers,
   TestApiProvider,
+  wrapInTestApp,
 } from '@backstage/test-utils';
 import { setupServer } from 'msw/node';
 import { PullRequestsListView } from './PullRequestsListView';
 import { handlers } from '../../mocks/handlers';
+import { ScmAuthApi, scmAuthApiRef } from '@backstage/integration-react';
+import { githubPullRequestsApiRef, GithubPullRequestsClient } from '../../api';
+import { ConfigReader } from '@backstage/core-app-api';
+import { defaultIntegrationsConfig } from '../../mocks/scmIntegrationsApiMock';
 
-const mockGithubAuth = {
-  getAccessToken: async (_: string[]) => 'test-token',
-};
+const mockScmAuth = {
+  getCredentials: async () => ({ token: 'test-token', headers: {} }),
+} as ScmAuthApi;
 
 const config = {
-  getOptionalConfigArray: (_: string) => [
-    { getOptionalString: (_s: string) => undefined },
-  ],
-};
+  getOptionalConfigArray(_: string) {
+    return [{ getOptionalString: (_s: string) => undefined }];
+  },
+} as ConfigApi;
 
 const apis: [AnyApiRef, Partial<unknown>][] = [
   [configApiRef, config],
-  [githubAuthApiRef, mockGithubAuth],
+  [scmAuthApiRef, mockScmAuth],
+  [
+    githubPullRequestsApiRef,
+    new GithubPullRequestsClient({
+      configApi: ConfigReader.fromConfigs([
+        {
+          context: 'unit-test',
+          data: defaultIntegrationsConfig,
+        },
+      ]),
+      scmAuthApi: mockScmAuth,
+    }),
+  ],
 ];
 
 describe('PullRequestsTable', () => {
@@ -85,9 +98,11 @@ describe('PullRequestsTable', () => {
       },
     ];
     render(
-      <TestApiProvider apis={apis}>
-        <PullRequestsListView data={testData} emptyStateText="" />
-      </TestApiProvider>,
+      wrapInTestApp(
+        <TestApiProvider apis={apis}>
+          <PullRequestsListView data={testData} emptyStateText="" />
+        </TestApiProvider>,
+      ),
     );
 
     expect(await screen.findByText('Test PR listed 1')).toBeInTheDocument();

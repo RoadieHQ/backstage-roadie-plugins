@@ -15,32 +15,20 @@
  */
 
 import React from 'react';
-import {
-  AnyApiRef,
-  errorApiRef,
-  githubAuthApiRef,
-} from '@backstage/core-plugin-api';
+import { AnyApiRef, errorApiRef } from '@backstage/core-plugin-api';
 import { TestApiProvider } from '@backstage/test-utils';
 import { render, screen } from '@testing-library/react';
 import MarkdownContent from './MarkdownContent';
 import {
   GetContentProps,
   GetContentResponse,
-  githubApiRef,
   GithubApi,
+  githubApiRef,
 } from '../../../apis';
+import { scmAuthApiRef } from '@backstage/integration-react';
 
-const mockAccessToken = jest
-  .fn()
-  .mockImplementation(async (_: string[]) => 'test-token');
-const mockGithubAuth = {
-  getAccessToken: mockAccessToken,
-  sessionState$: jest.fn(() => ({
-    subscribe: (fn: (a: string) => void) => {
-      fn('SignedIn');
-      return { unsubscribe: jest.fn() };
-    },
-  })),
+const mockScmAuth = {
+  getCredentials: async () => ({ token: 'test-token' }),
 };
 
 const mockGithubApi: GithubApi = {
@@ -80,25 +68,20 @@ const mockGithubApi: GithubApi = {
 };
 
 const apis: [AnyApiRef, Partial<unknown>][] = [
-  [githubAuthApiRef, mockGithubAuth],
+  [scmAuthApiRef, mockScmAuth],
   [githubApiRef, mockGithubApi],
   [errorApiRef, jest.fn()],
 ];
 
 describe('<MarkdownContent>', () => {
   it('should render sign in page', async () => {
-    const mockGithubUnAuth = {
-      getAccessToken: async (_: string[]) => 'test-token',
-      sessionState$: jest.fn(() => ({
-        subscribe: (fn: (a: string) => void) => {
-          fn('SignedOut');
-          return { unsubscribe: jest.fn() };
-        },
-      })),
-    };
-
     const api: [AnyApiRef, Partial<unknown>][] = [
-      [githubAuthApiRef, mockGithubUnAuth],
+      [
+        scmAuthApiRef,
+        {
+          getCredentials: async () => ({ token: undefined }),
+        },
+      ],
     ];
     render(
       <TestApiProvider apis={api}>

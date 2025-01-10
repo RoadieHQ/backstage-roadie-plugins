@@ -22,8 +22,7 @@ import {
 } from '@backstage/core-components';
 import {
   ApiHolder,
-  githubAuthApiRef,
-  SessionState,
+  configApiRef,
   useApi,
   useApiHolder,
 } from '@backstage/core-plugin-api';
@@ -31,18 +30,20 @@ import { MarkdownContentProps } from './types';
 import { Button, Grid, Tooltip, Typography } from '@material-ui/core';
 import useAsync from 'react-use/lib/useAsync';
 import { GithubApi, githubApiRef, GithubClient } from '../../../apis';
+import { scmAuthApiRef } from '@backstage/integration-react';
 
 const getGithubClient = (apiHolder: ApiHolder) => {
   let githubClient: GithubApi | undefined = apiHolder.get(githubApiRef);
   if (!githubClient) {
-    const auth = apiHolder.get(githubAuthApiRef);
-    if (auth) {
-      githubClient = new GithubClient({ githubAuthApi: auth });
+    const configApi = apiHolder.get(configApiRef);
+    const scmAuthApi = apiHolder.get(scmAuthApiRef);
+    if (scmAuthApi && configApi) {
+      githubClient = new GithubClient({ configApi, scmAuthApi });
     }
   }
   if (!githubClient) {
     throw new Error(
-      'The MarkdownCard component Failed to get the github client',
+      'The MarkdownCard component Failed to get the SCM auth client or SCM configuration',
     );
   }
   return githubClient;
@@ -95,8 +96,12 @@ const GithubFileContent = (props: MarkdownContentProps) => {
   );
 };
 
-const GithubNotAuthorized = () => {
-  const githubApi = useApi(githubAuthApiRef);
+const GithubNotAuthorized = ({
+  hostname = 'github.com',
+}: {
+  hostname?: string;
+}) => {
+  const scmAuth = useApi(scmAuthApiRef);
   return (
     <Grid container>
       <Grid item xs={8}>
@@ -110,8 +115,15 @@ const GithubNotAuthorized = () => {
           <Button
             variant="outlined"
             color="primary"
-            // Calling getAccessToken instead of a plain signIn because we are going to get the correct scopes right away. No need to second request
-            onClick={() => githubApi.getAccessToken('repo')}
+            onClick={() =>
+              scmAuth.getCredentials({
+                additionalScope: {
+                  customScopes: { github: ['repo'] },
+                },
+                url: `https://${hostname}`,
+                optional: true,
+              })
+            }
           >
             Sign in
           </Button>
@@ -127,19 +139,28 @@ const GithubNotAuthorized = () => {
  * @public
  */
 const MarkdownContent = (props: MarkdownContentProps) => {
-  const githubApi = useApi(githubAuthApiRef);
+  const { hostname } = props;
+  const scmAuth = useApi(scmAuthApiRef);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  const githubUrl = hostname ? `https://${hostname}` : 'https://github.com';
+
   useEffect(() => {
-    const authSubscription = githubApi.sessionState$().subscribe(state => {
-      if (state === SessionState.SignedIn) {
+    const doLogin = async () => {
+      const credentials = await scmAuth.getCredentials({
+        additionalScope: {
+          customScopes: { github: ['repo'] },
+        },
+        url: githubUrl,
+        optional: true,
+      });
+
+      if (credentials?.token) {
         setIsLoggedIn(true);
       }
-    });
-    return () => {
-      authSubscription.unsubscribe();
     };
-  }, [githubApi]);
+    doLogin();
+  }, [scmAuth, githubUrl]);
 
   return isLoggedIn ? (
     <GithubFileContent {...props} />

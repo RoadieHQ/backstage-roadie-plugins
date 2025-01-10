@@ -17,10 +17,11 @@
 import { useAsync } from 'react-use';
 import { Octokit } from '@octokit/rest';
 import { Entity } from '@backstage/catalog-model';
-import { useApi, githubAuthApiRef } from '@backstage/core-plugin-api';
+import { useApi } from '@backstage/core-plugin-api';
 import { useProjectEntity } from './useProjectEntity';
 import { useEntityGithubScmIntegration } from './useEntityGithubScmIntegration';
 import { useStore } from '../components/store';
+import { scmAuthApiRef } from '@backstage/integration-react';
 
 export const useRequest = (
   entity: Entity,
@@ -28,8 +29,8 @@ export const useRequest = (
   perPage: number = 0,
   maxResults: number = 0,
 ) => {
-  const auth = useApi(githubAuthApiRef);
-  const { baseUrl } = useEntityGithubScmIntegration(entity);
+  const auth = useApi(scmAuthApiRef);
+  const { hostname, baseUrl } = useEntityGithubScmIntegration(entity);
   const { owner, repo } = useProjectEntity(entity);
 
   const { state: requestState, setState: setRequestState } = useStore(
@@ -39,7 +40,15 @@ export const useRequest = (
   const { value, loading, error } = useAsync(async (): Promise<any> => {
     let result;
     try {
-      const token = await auth.getAccessToken(['repo']);
+      const { token } = await auth.getCredentials({
+        url: `https://${hostname}/`,
+        additionalScope: {
+          customScopes: {
+            github: ['repo'],
+          },
+        },
+      });
+
       const octokit = new Octokit({ auth: token });
 
       const response = await octokit.request(

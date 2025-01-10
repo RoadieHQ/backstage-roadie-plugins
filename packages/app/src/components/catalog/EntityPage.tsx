@@ -54,6 +54,7 @@ import { EntityTechdocsContent } from '@backstage/plugin-techdocs';
 import {
   EntityGithubPullRequestsContent,
   EntityGithubPullRequestsOverviewCard,
+  EntityGithubPullRequestsTable,
 } from '@roadiehq/backstage-plugin-github-pull-requests';
 import { EntityBitbucketPullRequestsContent } from '@roadiehq/backstage-plugin-bitbucket-pullrequest';
 import {
@@ -168,7 +169,6 @@ const overviewContent = (
     <Grid item md={6}>
       <EntityAboutCard variant="gridItem" />
     </Grid>
-
     <EntitySwitch>
       <EntitySwitch.Case if={isWizAvailable}>
         <Grid item md={6}>
@@ -176,7 +176,6 @@ const overviewContent = (
         </Grid>
       </EntitySwitch.Case>
     </EntitySwitch>
-
     <EntitySwitch>
       <EntitySwitch.Case if={isWizAvailable}>
         <Grid item md={6}>
@@ -184,7 +183,6 @@ const overviewContent = (
         </Grid>
       </EntitySwitch.Case>
     </EntitySwitch>
-
     <EntitySwitch>
       <EntitySwitch.Case if={isWizAvailable}>
         <Grid item md={6}>
@@ -192,7 +190,6 @@ const overviewContent = (
         </Grid>
       </EntitySwitch.Case>
     </EntitySwitch>
-
     <EntitySwitch>
       <EntitySwitch.Case if={isLambdaFunctionAvailable}>
         <Grid item md={6}>
@@ -304,6 +301,9 @@ const overviewContent = (
     </Grid>
     <Grid item md={6}>
       <EntityPrometheusGraphCard />
+    </Grid>
+    <Grid item md={6}>
+      <EntityGithubPullRequestsTable />
     </Grid>
   </Grid>
 );

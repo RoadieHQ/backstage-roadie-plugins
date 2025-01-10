@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,24 +17,25 @@
 import React, { FC, useMemo, useState } from 'react';
 import { useAsync } from 'react-use';
 import {
-  Typography,
   Box,
-  Paper,
-  ButtonGroup,
   Button,
+  ButtonGroup,
   Grid,
+  Paper,
+  Typography,
 } from '@material-ui/core';
 import GitHubIcon from '@material-ui/icons/GitHub';
 // eslint-disable-next-line
 import Alert from '@material-ui/lab/Alert';
 import { DateTime } from 'luxon';
 import { graphql } from '@octokit/graphql';
-import { useApi, githubAuthApiRef } from '@backstage/core-plugin-api';
-import { Progress, Table, TableColumn, Link } from '@backstage/core-components';
+import { useApi } from '@backstage/core-plugin-api';
+import { Link, Progress, Table, TableColumn } from '@backstage/core-components';
 import { useEntity } from '@backstage/plugin-catalog-react';
 import { useProjectName } from '../useProjectName';
 import { useUrl } from '../useUrl';
 import { useProjectEntity } from '../useProjectEntity';
+import { scmAuthApiRef } from '@backstage/integration-react';
 
 type State = 'OPEN' | 'FIXED' | 'DISMISSED';
 type StateFilter = State | 'ALL';
@@ -190,7 +191,7 @@ export const DependabotAlertsTable: FC<{}> = () => {
   const { entity } = useEntity();
   const { hostname, baseUrl } = useUrl(entity);
   const { owner, repo } = useProjectEntity(entity);
-  const auth = useApi(githubAuthApiRef);
+  const scmAuth = useApi(scmAuthApiRef);
 
   const query = `
   query GetDependabotAlerts($name: String!, $owner: String!) {
@@ -221,11 +222,17 @@ export const DependabotAlertsTable: FC<{}> = () => {
   }`;
 
   const { value, loading, error } = useAsync(async (): Promise<any> => {
-    const token = await auth.getAccessToken(['repo']);
+    const credentials = await scmAuth.getCredentials({
+      additionalScope: {
+        customScopes: { github: ['repo'] },
+      },
+      url: `https://${hostname}`,
+      optional: true,
+    });
     const gqlEndpoint = graphql.defaults({
       baseUrl,
       headers: {
-        authorization: `token ${token}`,
+        authorization: `token ${credentials.token}`,
       },
     });
     const { repository } = await gqlEndpoint<any>(query, {

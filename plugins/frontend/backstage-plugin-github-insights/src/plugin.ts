@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,15 @@
  */
 
 import {
+  configApiRef,
   createApiFactory,
   createComponentExtension,
   createPlugin,
   createRoutableExtension,
-  errorApiRef,
-  githubAuthApiRef,
 } from '@backstage/core-plugin-api';
 import { rootRouteRef } from './routes';
 import { githubApiRef, GithubClient } from './apis';
+import { scmAuthApiRef } from '@backstage/integration-react';
 
 export const githubInsightsPlugin = createPlugin({
   id: 'code-insights',
@@ -31,8 +31,8 @@ export const githubInsightsPlugin = createPlugin({
     createApiFactory({
       api: githubApiRef,
       deps: {
-        githubAuthApi: githubAuthApiRef,
-        errorApi: errorApiRef,
+        configApi: configApiRef,
+        scmAuthApi: scmAuthApiRef,
       },
       factory: deps => new GithubClient(deps),
     }),

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Larder Software Limited
+ * Copyright 2025 Larder Software Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import React, { useState, useCallback, FC } from 'react';
+import React, { FC, useCallback, useState } from 'react';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import Dialog from '@material-ui/core/Dialog';
@@ -28,15 +28,16 @@ import MenuItem from '@material-ui/core/MenuItem';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
-import { useApi, githubAuthApiRef } from '@backstage/core-plugin-api';
+import { useApi } from '@backstage/core-plugin-api';
 import Alert from '@material-ui/lab/Alert';
 import { useAsyncFn } from 'react-use';
 import { Octokit } from '@octokit/rest';
 import { useUrl } from '../useUrl';
 import {
-  UpdateSeverityStatusProps,
   SecurityInsightFilterState,
+  UpdateSeverityStatusProps,
 } from '../../types';
+import { scmAuthApiRef } from '@backstage/integration-react';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -72,8 +73,8 @@ export const UpdateSeverityStatusModal: FC<UpdateSeverityStatusProps> = ({
   const [open, setOpen] = useState(false);
   const [dismissedReason, setDismissedReason] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  const auth = useApi(githubAuthApiRef);
-  const { baseUrl } = useUrl(entity);
+  const scmAuth = useApi(scmAuthApiRef);
+  const { baseUrl, hostname } = useUrl(entity);
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -86,8 +87,14 @@ export const UpdateSeverityStatusModal: FC<UpdateSeverityStatusProps> = ({
   const [state, dissmiss] = useAsyncFn(async reason => {
     if (reason.length === 0) return setErrorMsg('Field required');
 
-    const token = await auth.getAccessToken(['repo']);
-    const octokit = new Octokit({ auth: token });
+    const credentials = await scmAuth.getCredentials({
+      additionalScope: {
+        customScopes: { github: ['repo'] },
+      },
+      url: `https://${hostname}`,
+      optional: true,
+    });
+    const octokit = new Octokit({ auth: credentials.token });
 
     const response = await octokit.request(
       'PATCH /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}',

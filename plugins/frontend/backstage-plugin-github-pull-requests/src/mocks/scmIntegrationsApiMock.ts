@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-import { useApi, configApiRef } from '@backstage/core-plugin-api';
-
-export const useBaseUrl = () => {
-  const config = useApi(configApiRef);
-  const providerConfigs =
-    config.getOptionalConfigArray('integrations.github') ?? [];
-  const targetProviderConfig = providerConfigs[0];
-  const baseUrl = targetProviderConfig?.getOptionalString('apiBaseUrl');
-  return baseUrl;
+export const defaultIntegrationsConfig = {
+  integrations: {
+    github: [
+      {
+        host: 'fake',
+        apiBaseUrl: 'https://fake',
+        token: 'fake',
+      },
+      {
+        host: 'github.com',
+        apiBaseUrl: 'https://api.github.com',
+        token: 'asdf',
+      },
+    ],
+  },
 };
