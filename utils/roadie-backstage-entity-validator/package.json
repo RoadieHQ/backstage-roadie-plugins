@@ -34,8 +34,8 @@
   },
   "dependencies": {
     "@actions/core": "^1.10.0",
-    "@backstage/catalog-model": "^1.7.1",
-    "@backstage/plugin-scaffolder-common": "^1.5.7",
+    "@backstage/catalog-model": "^1.7.2",
+    "@backstage/plugin-scaffolder-common": "^1.5.8",
     "ajv": "^8.4.0",
     "ajv-formats": "^2.1.0",
     "glob": "^7.1.7",
@@ -44,7 +44,7 @@
     "minimist": "^1.2.5"
   },
   "devDependencies": {
-    "@backstage/cli": "^0.29.2",
+    "@backstage/cli": "^0.29.4",
     "@vercel/ncc": "^0.38.0",
     "jest": "^27.0.1"
   },

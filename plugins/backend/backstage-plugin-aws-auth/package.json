@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "@backstage/backend-common": "^0.25.0",
-    "@backstage/backend-plugin-api": "^1.0.1",
+    "@backstage/backend-plugin-api": "^1.1.0",
     "@types/express": "^4.17.11",
     "aws-sdk": "^2.902.0",
     "cors": "^2.8.5",
@@ -49,8 +49,8 @@
     "winston": "^3.2.1"
   },
   "devDependencies": {
-    "@backstage/cli": "^0.29.2",
-    "@backstage/dev-utils": "^1.1.4"
+    "@backstage/cli": "^0.29.4",
+    "@backstage/dev-utils": "^1.1.5"
   },
   "files": [
     "dist"
