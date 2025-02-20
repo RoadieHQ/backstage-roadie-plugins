@@ -15,6 +15,7 @@
  */
 
 import { createTemplateAction } from '@backstage/plugin-scaffolder-node';
+import fg from 'fast-glob';
 import fs from 'fs-extra';
 import { InputError } from '@backstage/errors';
 import { resolveSafeChildPath } from '@backstage/backend-plugin-api';
@@ -55,7 +56,7 @@ export function createReplaceInFileAction(): TemplateAction<{
                 file: {
                   type: 'string',
                   title:
-                    'The source location of the file to be used to run replace against',
+                    'The source location of the file to be used to run replace against (supports wildcards)',
                 },
                 find: {
                   type: 'string',
@@ -94,16 +95,24 @@ export function createReplaceInFileAction(): TemplateAction<{
           ctx.workspacePath,
           file.file,
         );
-        const content: string = fs.readFileSync(sourceFilepath).toString();
 
-        let find: string | RegExp = file.find;
-        if (file.matchRegex) {
-          find = new RegExp(file.find, 'g');
+        const resolvedSourcePaths = await fg(sourceFilepath, {
+          cwd: ctx.workspacePath,
+          absolute: true,
+        });
+
+        for (const filepath of resolvedSourcePaths) {
+          const content: string = fs.readFileSync(filepath).toString();
+
+          let find: string | RegExp = file.find;
+          if (file.matchRegex) {
+            find = new RegExp(file.find, 'g');
+          }
+
+          const replacedContent = content.replaceAll(find, file.replaceWith);
+
+          fs.writeFileSync(filepath, replacedContent);
         }
-
-        const replacedContent = content.replaceAll(find, file.replaceWith);
-
-        fs.writeFileSync(sourceFilepath, replacedContent);
       }
     },
   });

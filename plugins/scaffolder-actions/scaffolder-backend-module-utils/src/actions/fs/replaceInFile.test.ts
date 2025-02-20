@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 import { PassThrough } from 'stream';
-import { createWriteFileAction } from './writeFile';
 import mock from 'mock-fs';
 import fs from 'fs-extra';
 import { createReplaceInFileAction } from './replaceInFile';
 import { getVoidLogger } from '@backstage/backend-common';
 
 describe('roadiehq:utils:fs:replace', () => {
-  beforeEach(() => {
-    mock({
-      'fake-tmp-dir': {},
-    });
-  });
   afterEach(() => mock.restore());
   const mockContext = {
     logger: getVoidLogger(),
@@ -46,7 +40,6 @@ describe('roadiehq:utils:fs:replace', () => {
     },
   };
   const action = createReplaceInFileAction();
-  const fileCreationAction = createWriteFileAction();
 
   it('should throw error when required parameter files is not provided', async () => {
     await expect(
@@ -67,6 +60,7 @@ describe('roadiehq:utils:fs:replace', () => {
       }),
     ).rejects.toThrow(/files must be an Array/);
   });
+
   it('should throw error when required parameter files.file does not have find', async () => {
     await expect(
       action.handler({
@@ -85,13 +79,11 @@ describe('roadiehq:utils:fs:replace', () => {
       }),
     ).rejects.toThrow(/each file must have a find and replaceWith property/);
   });
+
   it('should write file to the workspacePath with the given content', async () => {
-    await fileCreationAction.handler({
-      ...mockContext,
-      workspacePath: 'fake-tmp-dir',
-      input: {
-        path: 'fake-file.yaml',
-        content: 'foo: bar',
+    mock({
+      'fake-tmp-dir': {
+        'fake-file.yaml': 'foo: bar',
       },
     });
 
@@ -112,13 +104,11 @@ describe('roadiehq:utils:fs:replace', () => {
     const file = fs.readFileSync('fake-tmp-dir/fake-file.yaml', 'utf-8');
     expect(file).toEqual('foo: baz');
   });
+
   it('should replace regular expressions and write file to the workspacePath with the given content', async () => {
-    await fileCreationAction.handler({
-      ...mockContext,
-      workspacePath: 'fake-tmp-dir',
-      input: {
-        path: 'fake-file.yaml',
-        content: 'foo: bar',
+    mock({
+      'fake-tmp-dir': {
+        'fake-file.yaml': 'foo: bar',
       },
     });
 
@@ -139,5 +129,36 @@ describe('roadiehq:utils:fs:replace', () => {
     expect(fs.existsSync('fake-tmp-dir/fake-file.yaml')).toBe(true);
     const file = fs.readFileSync('fake-tmp-dir/fake-file.yaml', 'utf-8');
     expect(file).toEqual('foo: baz');
+  });
+
+  it('should handle multiple files with wildcards', async () => {
+    mock({
+      'fake-tmp-dir': {
+        'fake-file-1.yaml': 'foo1: bar',
+        'fake-file-2.yaml': 'foo2: bar',
+      },
+    });
+
+    await action.handler({
+      ...mockContext,
+      workspacePath: 'fake-tmp-dir',
+      input: {
+        files: [
+          {
+            file: 'fake-file*.yaml',
+            find: 'bar',
+            replaceWith: 'baz',
+          },
+        ],
+      } as any,
+    });
+
+    expect(fs.existsSync('fake-tmp-dir/fake-file-1.yaml')).toBe(true);
+    const file1 = fs.readFileSync('fake-tmp-dir/fake-file-1.yaml', 'utf-8');
+    expect(file1).toEqual('foo1: baz');
+
+    expect(fs.existsSync('fake-tmp-dir/fake-file-2.yaml')).toBe(true);
+    const file2 = fs.readFileSync('fake-tmp-dir/fake-file-2.yaml', 'utf-8');
+    expect(file2).toEqual('foo2: baz');
   });
 });
