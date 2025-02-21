@@ -65,6 +65,7 @@
     "yn": "^4.0.0"
   },
   "devDependencies": {
+    "@backstage/backend-defaults": "^0.5.3",
     "@backstage/cli": "^0.29.2",
     "jest-mock": "^29.0.0",
     "@types/supertest": "^2.0.8",

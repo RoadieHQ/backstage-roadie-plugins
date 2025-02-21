@@ -3,7 +3,6 @@ import fetch from 'cross-fetch';
 import { Logger } from 'winston';
 import { LoggerService } from '@backstage/backend-plugin-api';
 import { timer } from './timer.services';
-
 import {
   ArgoServiceApi,
   CreateArgoApplicationProps,
