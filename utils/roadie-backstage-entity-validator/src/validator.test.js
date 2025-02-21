@@ -8,22 +8,6 @@ describe('validator', () => {
   beforeEach(() => {
     vol.reset();
     vol.fromJSON({
-      'catalog-info-with-bad-techdocs-dir.yml': `
-apiVersion: backstage.io/v1alpha1
-kind: Component
-metadata:
-  name: sample-service-5
-  description: |
-      A broken component
-  annotations:
-      backstage.io/techdocs-ref: dir:./
-spec:
-  type: service
-  owner: user:dtuite
-  lifecycle: experimental
-  providesApis:
-    - sample-service
-`,
       'catalog-info-with-empty-label.yml': `
 apiVersion: backstage.io/v1alpha1
 kind: API
@@ -420,11 +404,6 @@ spec:
       "Error: Placeholder with name 'definition' is empty. Please remove it or populate it.",
     );
   });
-  it('Should fail to validate with bad techdocs path', async () => {
-    await expect(
-      validator.validateFromFile('catalog-info-with-bad-techdocs-dir.yml'),
-    ).rejects.toThrow('Techdocs annotation specifies "dir" but file under');
-  });
   it('Should throw validation error for system entity', async () => {
     await expect(
       validator.validateFromFile('invalid-system-entity.yml'),
@@ -439,125 +418,6 @@ spec:
     await expect(
       validator.validateFromFile('invalid-resource-entity.yml'),
     ).rejects.toThrow();
-  });
-  describe('validateDefaultTechDocs', () => {
-    const defaultVol = {
-      './test-entity.yaml': `
-      apiVersion: backstage.io/v1alpha1
-      kind: Component
-      metadata:
-        name: test-entity
-        description: |
-          Foo bar description
-        annotations:
-          backstage.io/techdocs-ref: dir:.
-      spec:
-        type: service
-        owner: user:dtuite
-        lifecycle: experimental
-      `,
-    };
-    describe('default techdocs annotations is set', () => {
-      it('should use the default mkdocs.yaml', async () => {
-        vol.fromJSON(defaultVol);
-        await expect(
-          validator.validateFromFile('./test-entity.yaml'),
-        ).resolves.toEqual([
-          {
-            apiVersion: 'backstage.io/v1alpha1',
-            kind: 'Component',
-            metadata: {
-              namespace: 'default',
-              name: 'test-entity',
-              description: 'Foo bar description\n',
-              annotations: {
-                'backstage.io/techdocs-ref': 'dir:.',
-              },
-            },
-            spec: {
-              type: 'service',
-              lifecycle: 'experimental',
-              owner: 'user:dtuite',
-            },
-          },
-        ]);
-      });
-    });
-  });
-  describe('validateTechDocs', () => {
-    const defaultVol = {
-      './test-entity.yaml': `
-apiVersion: backstage.io/v1alpha1
-kind: Component
-metadata:
-  name: test-entity
-  description: |
-    Foo bar description
-  annotations:
-    backstage.io/techdocs-ref: dir:test-dir
-spec:
-  type: service
-  owner: user:dtuite
-  lifecycle: experimental
-`,
-    };
-    describe('techdocs annotation is set', () => {
-      it('should throw error when mkdocs.yaml|mkdocs.yml file does not accessible', async () => {
-        vol.fromJSON(defaultVol);
-        await expect(
-          validator.validateFromFile('./test-entity.yaml'),
-        ).rejects.toThrow('test-dir/mkdocs.yaml');
-      });
-
-      it('should resolve when mkdocs.yaml found', async () => {
-        vol.fromJSON({ ...defaultVol, 'test-dir/mkdocs.yaml': 'bar' });
-        await expect(
-          validator.validateFromFile('./test-entity.yaml'),
-        ).resolves.toEqual([
-          {
-            apiVersion: 'backstage.io/v1alpha1',
-            kind: 'Component',
-            metadata: {
-              namespace: 'default',
-              name: 'test-entity',
-              description: 'Foo bar description\n',
-              annotations: {
-                'backstage.io/techdocs-ref': 'dir:test-dir',
-              },
-            },
-            spec: {
-              type: 'service',
-              lifecycle: 'experimental',
-              owner: 'user:dtuite',
-            },
-          },
-        ]);
-      });
-      it('should resolve when mkdocs.yml found', async () => {
-        vol.fromJSON({ ...defaultVol, 'test-dir/mkdocs.yml': 'bar' });
-        await expect(
-          validator.validateFromFile('./test-entity.yaml'),
-        ).resolves.toEqual([
-          {
-            apiVersion: 'backstage.io/v1alpha1',
-            kind: 'Component',
-            metadata: {
-              namespace: 'default',
-              name: 'test-entity',
-              description: 'Foo bar description\n',
-              annotations: {
-                'backstage.io/techdocs-ref': 'dir:test-dir',
-              },
-            },
-            spec: {
-              type: 'service',
-              lifecycle: 'experimental',
-              owner: 'user:dtuite',
-            },
-          },
-        ]);
-      });
-    });
   });
   describe('template', () => {
     it('Should successfully validate v2 template', async () => {

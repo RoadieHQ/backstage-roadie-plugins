@@ -22,7 +22,6 @@ import repositorySchema from './schemas/repository.schema.json';
 import productSchema from './schemas/product.schema.json';
 import Ajv from 'ajv';
 import ajvFormats from 'ajv-formats';
-import { relativeSpaceValidation } from './relativeSpaceValidation';
 
 const ajv = new Ajv({ verbose: true });
 ajvFormats(ajv);
@@ -168,12 +167,5 @@ export const validateFromFile = async (
     console.log(`Validating Entity Schema policies for file ${filepath}`);
   }
 
-  const entities = await validate(
-    fileContents,
-    verbose,
-    customAnnotationSchemaLocation,
-  );
-  await relativeSpaceValidation(fileContents, filepath, verbose);
-
-  return entities;
+  return await validate(fileContents, verbose, customAnnotationSchemaLocation);
 };
